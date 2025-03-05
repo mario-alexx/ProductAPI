@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ProductAPI.Data;
 using ProductAPI.Models;
 
@@ -9,68 +10,79 @@ namespace ProductAPI.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly ProductRepository _repository;
+        private readonly ApplicationDbContext _context;
         private readonly ILogger<ProductsController> _logger;
 
-        public ProductsController(ProductRepository repository, ILogger<ProductsController> logger)
+        public ProductsController(ApplicationDbContext context, ILogger<ProductsController> logger)
         {
-            _repository = repository;
+            _context = context;
             _logger = logger;
         }
 
-        //[HttpGet]
-        //public ActionResult<IEnumerable<Product>> GetAll()
-        //{
-        //    return Ok(_repository.GetAll());
-        //}
+        [HttpGet]
+        public async Task<ActionResult> GetAll()
+        {
+            var products = await _context.Products.ToListAsync();
+            return Ok(products);
+        }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Product>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
+        public async Task<ActionResult<IEnumerable<Product>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
         {
             _logger.LogInformation("Get alls products");
-            var products = _repository.GetAll()
+            var products = await _context.Products
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .ToList();
+                .ToListAsync();
 
             return Ok(products);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Product> GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var product = _repository.GetById(id);
-            return product == null ? NotFound() : Ok(product);
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
+                return NotFound();
+
+            return Ok(product);
         }
 
         [HttpPost]
-        public ActionResult<Product> Create(Product product)
+        public async Task<IActionResult> Create(Product product)
         {
-            _repository.Add(product);
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
         }
 
         [HttpPut("{id}")]
-        public ActionResult Update(int id, Product product)
+        public async Task<IActionResult> Update(int id, Product product)
         {
-            if (!_repository.Update(id, product)) 
-                return NotFound();
+            if (id != product.Id)
+                return BadRequest();
+
+            _context.Entry(product).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            if (!_repository.Delete(id))
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
                 return NotFound();
 
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
         [HttpGet("search")] 
-        public ActionResult<IEnumerable<Product>> Search([FromQuery] string? name, [FromQuery] decimal? minPrice)
+        public async Task<ActionResult<IEnumerable<Product>>> Search([FromQuery] string? name, [FromQuery] decimal? minPrice)
         {
-            var products = _repository.GetAll();
+            IEnumerable<Product> products = await _context.Products.ToListAsync();
 
             if(!string.IsNullOrEmpty(name))
             {
