@@ -9,7 +9,7 @@ using ProductAPI.Data;
 
 namespace ProductAPI.Migrations
 {
-    [DbContext(typeof(ApplicationnDbContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     partial class ApplicationnDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

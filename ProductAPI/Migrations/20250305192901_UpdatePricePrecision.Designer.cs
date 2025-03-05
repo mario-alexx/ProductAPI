@@ -10,7 +10,7 @@ using ProductAPI.Data;
 
 namespace ProductAPI.Migrations
 {
-    [DbContext(typeof(ApplicationnDbContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20250305192901_UpdatePricePrecision")]
     partial class UpdatePricePrecision
     {

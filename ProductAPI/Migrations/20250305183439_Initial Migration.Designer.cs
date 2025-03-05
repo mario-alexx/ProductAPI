@@ -10,7 +10,7 @@ using ProductAPI.Data;
 
 namespace ProductAPI.Migrations
 {
-    [DbContext(typeof(ApplicationnDbContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20250305183439_Initial Migration")]
     partial class InitialMigration
     {
