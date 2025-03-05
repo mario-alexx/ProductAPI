@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProductAPI.Models
 {
@@ -11,6 +12,7 @@ namespace ProductAPI.Models
         public string Name { get; set; }
 
         [Range(minimum: 0.01, double.MaxValue, ErrorMessage = "The price must be greater than 0")]
+        [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
     }
 }
