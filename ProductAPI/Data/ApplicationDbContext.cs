@@ -10,5 +10,12 @@ namespace ProductAPI.Data
         }
 
         public DbSet<Product> Products { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Name)
+                .HasDatabaseName("IX_Product_Name");
+        }
     }
 }
