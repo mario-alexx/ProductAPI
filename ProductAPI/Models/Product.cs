@@ -14,5 +14,7 @@ namespace ProductAPI.Models
         [Range(minimum: 0.01, double.MaxValue, ErrorMessage = "The price must be greater than 0")]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }
