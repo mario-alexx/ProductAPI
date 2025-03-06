@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +13,9 @@ using System.Text;
 
 namespace ProductAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
+    [ApiVersion("1.0")]
     public class ProductsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -28,7 +30,10 @@ namespace ProductAPI.Controllers
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {
-            var products = await _context.Products.Where(p => !p.IsDeleted).ToListAsync();
+            var products = await _context.Products.Where(p => !p.IsDeleted)
+                .Select(p => new {p.Name, p.Price})
+                .AsNoTracking()
+                .ToListAsync();
             return Ok(products);
         }
 
@@ -40,13 +45,14 @@ namespace ProductAPI.Controllers
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and page size must be greather than zero.");
 
-            var query = _context.Products.Where(p => !p.IsDeleted);
+            var query = _context.Products.Where(p => !p.IsDeleted).Select(p => new { p.Name, p.Price});
 
             var totalItems = query.Count();
 
             var products = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .AsNoTracking()
                 .ToListAsync();
 
             return Ok(new 
