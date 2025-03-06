@@ -1,8 +1,14 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProductAPI.Data;
 using ProductAPI.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ProductAPI.Controllers
 {
@@ -22,7 +28,7 @@ namespace ProductAPI.Controllers
         [HttpGet]
         public async Task<ActionResult> GetAll()
         {
-            var products = await _context.Products.ToListAsync();
+            var products = await _context.Products.Where(p => !p.IsDeleted).ToListAsync();
             return Ok(products);
         }
 
@@ -30,12 +36,24 @@ namespace ProductAPI.Controllers
         public async Task<ActionResult<IEnumerable<Product>>> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 5)
         {
             _logger.LogInformation("Get alls products");
-            var products = await _context.Products
+
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest("Page and page size must be greather than zero.");
+
+            var query = _context.Products.Where(p => !p.IsDeleted);
+
+            var totalItems = query.Count();
+
+            var products = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(products);
+            return Ok(new 
+            {
+                TotalItems = totalItems, Page = page,
+                Size = pageSize, Data = products
+            });
         }
 
         [HttpGet("{id}")]
@@ -48,6 +66,7 @@ namespace ProductAPI.Controllers
             return Ok(product);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create(Product product)
         {
@@ -56,6 +75,7 @@ namespace ProductAPI.Controllers
             return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, Product product)
         {
@@ -67,15 +87,15 @@ namespace ProductAPI.Controllers
             return NoContent();
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null)
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            if (product == null || product.IsDeleted)
                 return NotFound();
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+            product.IsDeleted = true;
             return NoContent();
         }
 
